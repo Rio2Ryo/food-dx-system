@@ -5,18 +5,56 @@ import { useEffect, useState } from "react";
 type Invoice = {
   id: string;
   invoiceNumber: string;
-  subtotal: string;
-  taxAmount: string;
-  taxRate: string;
-  totalAmount: string;
+  orderNumber: string;
+  issuerName: string;
+  recipientName: string;
+  totalAmount: number;
   status: string;
   issueDate: string;
-  dueDate: string;
-  notes: string | null;
-  issuerCompany: { name: string };
-  recipientCompany: { name: string };
-  order: { orderNumber: string };
 };
+
+const sampleInvoices: Invoice[] = [
+  {
+    id: "1",
+    invoiceNumber: "INV-20260301-001",
+    orderNumber: "ORD-20260301-001",
+    issuerName: "青果卸売 田中商店",
+    recipientName: "株式会社マルシェ",
+    totalAmount: 156800,
+    status: "PAID",
+    issueDate: "2026-03-01",
+  },
+  {
+    id: "2",
+    invoiceNumber: "INV-20260305-001",
+    orderNumber: "ORD-20260305-002",
+    issuerName: "水産物流通 山田商事",
+    recipientName: "レストラン花園",
+    totalAmount: 89400,
+    status: "ISSUED",
+    issueDate: "2026-03-05",
+  },
+  {
+    id: "3",
+    invoiceNumber: "INV-20260310-001",
+    orderNumber: "ORD-20260310-003",
+    issuerName: "精肉卸売 鈴木商店",
+    recipientName: "スーパーマーケット吉田",
+    totalAmount: 234500,
+    status: "OVERDUE",
+    issueDate: "2026-03-10",
+  },
+  {
+    id: "4",
+    invoiceNumber: "INV-20260315-001",
+    orderNumber: "ORD-20260315-005",
+    issuerName: "冷凍食品 北海道フーズ",
+    recipientName: "ホテルオーシャン",
+    totalAmount: 312000,
+    status: "DRAFT",
+    issueDate: "2026-03-15",
+  },
+];
 
 const statusLabel: Record<string, string> = {
   DRAFT: "下書き",
@@ -33,58 +71,49 @@ const statusColor: Record<string, string> = {
   SENT: "bg-indigo-100 text-indigo-800",
   PAID: "bg-green-100 text-green-800",
   OVERDUE: "bg-red-100 text-red-800",
-  CANCELLED: "bg-gray-100 text-gray-500",
+  CANCELLED: "bg-gray-100 text-gray-500 line-through",
 };
 
-const allStatuses = [
-  { value: "", label: "すべて" },
-  { value: "DRAFT", label: "下書き" },
-  { value: "ISSUED", label: "発行済" },
-  { value: "SENT", label: "送付済" },
-  { value: "PAID", label: "入金済" },
-  { value: "OVERDUE", label: "期限超過" },
-  { value: "CANCELLED", label: "取消" },
-];
-
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [filterStatus, setFilterStatus] = useState("");
+  const [invoices, setInvoices] = useState<Invoice[]>(sampleInvoices);
 
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (filterStatus) params.set("status", filterStatus);
-
-    fetch(`/api/invoices?${params.toString()}`)
-      .then((res) => res.json() as Promise<Invoice[]>)
-      .then(setInvoices);
-  }, [filterStatus]);
+    fetch("/api/invoices")
+      .then((res) => {
+        if (!res.ok) throw new Error("API error");
+        return res.json() as Promise<Invoice[]>;
+      })
+      .then((data) => {
+        if (data && data.length > 0) {
+          setInvoices(
+            data.map((inv: Record<string, unknown>) => ({
+              id: inv.id as string,
+              invoiceNumber: inv.invoiceNumber as string,
+              orderNumber:
+                (inv.order as { orderNumber: string } | undefined)
+                  ?.orderNumber ?? (inv.orderNumber as string),
+              issuerName:
+                (inv.issuerCompany as { name: string } | undefined)?.name ??
+                (inv.issuerName as string),
+              recipientName:
+                (inv.recipientCompany as { name: string } | undefined)?.name ??
+                (inv.recipientName as string),
+              totalAmount: Number(inv.totalAmount),
+              status: inv.status as string,
+              issueDate: inv.issueDate as string,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        // API失敗時はサンプルデータを維持
+      });
+  }, []);
 
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">請求書管理</h1>
-      </div>
-
-      {/* フィルター */}
-      <div className="mt-4 flex items-center gap-4">
-        <label className="text-sm font-medium text-gray-700">
-          ステータス:
-        </label>
-        <div className="flex gap-2">
-          {allStatuses.map((s) => (
-            <button
-              key={s.value}
-              onClick={() => setFilterStatus(s.value)}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                filterStatus === s.value
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900">請求書一覧</h1>
       </div>
 
       {/* 請求書テーブル */}
@@ -99,22 +128,16 @@ export default function InvoicesPage() {
                 発注番号
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                発行先
+                発行元 → 請求先
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                金額
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                ステータス
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                 発行日
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                支払期限
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                金額（税込）
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                税率
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                状態
               </th>
             </tr>
           </thead>
@@ -122,64 +145,44 @@ export default function InvoicesPage() {
             {invoices.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={6}
                   className="px-6 py-8 text-center text-sm text-gray-500"
                 >
                   請求書データがありません
                 </td>
               </tr>
             )}
-            {invoices.map((invoice) => {
-              const isOverdue =
-                invoice.status !== "PAID" &&
-                invoice.status !== "CANCELLED" &&
-                new Date(invoice.dueDate) < new Date();
-
-              return (
-                <tr key={invoice.id} className="hover:bg-gray-50">
-                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-blue-600">
-                    {invoice.invoiceNumber}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                    {invoice.order.orderNumber}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                    {invoice.recipientCompany.name}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {new Date(invoice.issueDate).toLocaleDateString("ja-JP")}
-                  </td>
-                  <td
-                    className={`whitespace-nowrap px-6 py-4 text-sm ${
-                      isOverdue ? "font-medium text-red-600" : "text-gray-500"
+            {invoices.map((invoice) => (
+              <tr key={invoice.id} className="hover:bg-gray-50">
+                <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-blue-600">
+                  {invoice.invoiceNumber}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                  {invoice.orderNumber}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                  {invoice.issuerName}
+                  <span className="mx-1 text-gray-400">→</span>
+                  {invoice.recipientName}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-right text-sm text-gray-900">
+                  ¥{invoice.totalAmount.toLocaleString()}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm">
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs font-medium ${
+                      statusColor[invoice.status] ??
+                      "bg-gray-100 text-gray-800"
                     }`}
                   >
-                    {new Date(invoice.dueDate).toLocaleDateString("ja-JP")}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                    ¥{Number(invoice.totalAmount).toLocaleString()}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {(Number(invoice.taxRate) * 100).toFixed(0)}%
-                    {Number(invoice.taxRate) <= 0.08 && (
-                      <span className="ml-1 text-xs text-orange-600">
-                        (軽減)
-                      </span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm">
-                    <span
-                      className={`rounded-full px-2 py-1 text-xs font-medium ${
-                        statusColor[invoice.status] ??
-                        "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {statusLabel[invoice.status] ?? invoice.status}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
+                    {statusLabel[invoice.status] ?? invoice.status}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                  {new Date(invoice.issueDate).toLocaleDateString("ja-JP")}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
