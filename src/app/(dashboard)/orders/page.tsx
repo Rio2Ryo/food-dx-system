@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 type Order = {
   id: string;
@@ -62,26 +62,48 @@ const SAMPLE_ORDERS: Order[] = [
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "下書き",
-  SUBMITTED: "発注済",
+  SUBMITTED: "提出済",
   CONFIRMED: "確認済",
-  SHIPPED: "出荷済",
+  SHIPPED: "出荷中",
   DELIVERED: "納品済",
   CANCELLED: "キャンセル",
 };
 
 const STATUS_BADGE_CLASS: Record<string, string> = {
-  DRAFT: "bg-gray-100 text-gray-700",
-  SUBMITTED: "bg-blue-100 text-blue-700",
-  CONFIRMED: "bg-green-100 text-green-700",
-  SHIPPED: "bg-yellow-100 text-yellow-800",
-  DELIVERED: "bg-emerald-100 text-emerald-700",
-  CANCELLED: "bg-red-100 text-red-700",
+  DRAFT: "bg-slate-100 text-slate-700 ring-slate-600/20",
+  SUBMITTED: "bg-blue-50 text-blue-700 ring-blue-600/20",
+  CONFIRMED: "bg-indigo-50 text-indigo-700 ring-indigo-600/20",
+  SHIPPED: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  DELIVERED: "bg-emerald-50 text-emerald-700 ring-emerald-600/20",
+  CANCELLED: "bg-red-50 text-red-700 ring-red-600/20",
 };
+
+function formatDateJP(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+function formatAmount(amount: number): string {
+  return `¥${amount.toLocaleString("ja-JP")}`;
+}
+
+function SkeletonRow() {
+  return (
+    <tr>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <td key={i} className="px-6 py-4">
+          <div className="h-4 animate-pulse rounded bg-slate-200" style={{ width: i === 4 ? "5rem" : "8rem" }} />
+        </td>
+      ))}
+    </tr>
+  );
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [usingSample, setUsingSample] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetch("/api/orders")
@@ -106,14 +128,31 @@ export default function OrdersPage() {
       });
   }, []);
 
+  const filteredOrders = useMemo(() => {
+    if (!searchQuery.trim()) return orders;
+    const q = searchQuery.toLowerCase();
+    return orders.filter(
+      (o) =>
+        o.orderNumber.toLowerCase().includes(q) ||
+        o.buyer.name.toLowerCase().includes(q) ||
+        o.supplier.name.toLowerCase().includes(q) ||
+        (STATUS_LABEL[o.status] ?? "").includes(q)
+    );
+  }, [orders, searchQuery]);
+
   return (
-    <div>
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">発注管理</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">発注管理</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            発注の作成・確認・ステータス管理を行います
+          </p>
+        </div>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors"
+          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 transition-colors"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -131,96 +170,165 @@ export default function OrdersPage() {
 
       {/* Sample data banner */}
       {usingSample && (
-        <div className="mt-4 rounded-md bg-amber-50 border border-amber-200 px-4 py-3">
-          <p className="text-sm text-amber-800">
-            サンプルデータを表示しています。データベースに発注データが登録されると実データに切り替わります。
-          </p>
+        <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 flex-shrink-0 text-slate-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <p className="text-sm text-slate-500">サンプルデータ</p>
         </div>
       )}
 
-      {/* Loading state */}
-      {isLoading ? (
-        <div className="mt-6 flex items-center justify-center rounded-lg bg-white py-20 shadow">
-          <div className="text-center">
-            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600" />
-            <p className="mt-3 text-sm text-gray-500">読み込み中...</p>
-          </div>
+      {/* Search bar */}
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-4 w-4 text-slate-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
         </div>
-      ) : (
-        /* Orders table */
-        <div className="mt-6 overflow-hidden rounded-lg bg-white shadow ring-1 ring-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600">
+        <input
+          type="text"
+          placeholder="発注番号、発注元、発注先で検索..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="block w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors"
+        />
+      </div>
+
+      {/* Table card */}
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead>
+              <tr className="bg-slate-50/80">
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                   発注番号
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600">
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                   発注元
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600">
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                   発注先
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600">
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                   ステータス
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-semibold tracking-wider text-gray-600">
+                <th className="px-6 py-3.5 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
                   金額
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold tracking-wider text-gray-600">
+                <th className="px-6 py-3.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                   発注日
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {orders.map((order) => (
-                <tr
-                  key={order.id}
-                  className="hover:bg-gray-50 transition-colors cursor-pointer"
-                >
-                  <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-blue-600 hover:text-blue-800">
-                    <a href={`/orders/${order.id}`}>{order.orderNumber}</a>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                    {order.buyer.name}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                    {order.supplier.name}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        STATUS_BADGE_CLASS[order.status] ?? "bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {STATUS_LABEL[order.status] ?? order.status}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900 text-right tabular-nums">
-                    ¥{Number(order.totalAmount).toLocaleString()}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {new Date(order.orderDate).toLocaleDateString("ja-JP")}
+            <tbody className="divide-y divide-slate-100">
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
+              ) : filteredOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-16 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-10 w-10 text-slate-300"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                        />
+                      </svg>
+                      <p className="text-sm font-medium text-slate-900">発注データがありません</p>
+                      <p className="text-sm text-slate-500">
+                        {searchQuery
+                          ? "検索条件に一致する発注が見つかりませんでした"
+                          : "新規発注を作成してください"}
+                      </p>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredOrders.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="even:bg-slate-50/50 hover:bg-indigo-50/40 transition-colors cursor-pointer"
+                  >
+                    <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-indigo-600 hover:text-indigo-800">
+                      <a href={`/orders/${order.id}`}>{order.orderNumber}</a>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
+                      {order.buyer.name}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-700">
+                      {order.supplier.name}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset ${
+                          STATUS_BADGE_CLASS[order.status] ?? "bg-slate-100 text-slate-700 ring-slate-600/20"
+                        }`}
+                      >
+                        {STATUS_LABEL[order.status] ?? order.status}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium tabular-nums text-slate-900">
+                      {formatAmount(order.totalAmount)}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
+                      {formatDateJP(order.orderDate)}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
+        </div>
 
-          {/* Summary footer */}
-          <div className="border-t border-gray-200 bg-gray-50 px-6 py-3 flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              全 <span className="font-medium">{orders.length}</span> 件
+        {/* Summary footer */}
+        {!isLoading && filteredOrders.length > 0 && (
+          <div className="border-t border-slate-200 bg-slate-50/80 px-6 py-3 flex items-center justify-between">
+            <p className="text-sm text-slate-500">
+              全 <span className="font-medium text-slate-700">{filteredOrders.length}</span> 件
+              {searchQuery && filteredOrders.length !== orders.length && (
+                <span className="ml-1 text-slate-400">
+                  （{orders.length} 件中）
+                </span>
+              )}
             </p>
-            <p className="text-sm text-gray-600">
-              合計:{" "}
-              <span className="font-semibold text-gray-900">
-                ¥{orders.reduce((sum, o) => sum + Number(o.totalAmount), 0).toLocaleString()}
+            <p className="text-sm text-slate-500">
+              合計{" "}
+              <span className="font-semibold tabular-nums text-slate-900">
+                {formatAmount(filteredOrders.reduce((sum, o) => sum + Number(o.totalAmount), 0))}
               </span>
             </p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
