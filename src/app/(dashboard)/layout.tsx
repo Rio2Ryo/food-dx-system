@@ -1,12 +1,13 @@
 import Link from "next/link";
+import WorkflowStepBar from "@/components/WorkflowStepBar";
 
 const navItems = [
+  { href: "/ocr", label: "受注(OCR)" },
   { href: "/orders", label: "発注管理" },
-  { href: "/products", label: "商品マスタ" },
   { href: "/inventory", label: "在庫管理" },
-  { href: "/returns", label: "返品管理" },
   { href: "/accounting", label: "会計連携" },
-  { href: "/ocr", label: "OCR読取" },
+  { href: "/returns", label: "返品管理" },
+  { href: "/products", label: "商品マスタ" },
 ];
 
 export default function DashboardLayout({
@@ -26,7 +27,7 @@ export default function DashboardLayout({
               >
                 Citta Handcho
               </Link>
-              <div className="ml-10 flex items-center space-x-4">
+              <div className="ml-10 hidden items-center space-x-4 lg:flex">
                 {navItems.map((item) => (
                   <Link
                     key={item.href}
@@ -41,7 +42,11 @@ export default function DashboardLayout({
           </div>
         </div>
       </nav>
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Workflow Step Bar */}
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <WorkflowStepBar />
+      </div>
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {children}
       </main>
     </div>
