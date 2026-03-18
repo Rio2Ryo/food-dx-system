@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 // 商品一覧取得
 export async function GET(request: NextRequest) {
+  const prisma = await getPrisma();
   const searchParams = request.nextUrl.searchParams;
   const companyId = searchParams.get("companyId");
   const category = searchParams.get("category");
@@ -21,7 +22,9 @@ export async function GET(request: NextRequest) {
 
 // 商品登録
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const prisma = await getPrisma();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body = (await request.json()) as any;
 
   const product = await prisma.product.create({
     data: {

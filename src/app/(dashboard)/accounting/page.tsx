@@ -52,8 +52,8 @@ export default function AccountingPage() {
 
   useEffect(() => {
     fetch("/api/invoices")
-      .then((res) => res.json())
-      .then((data: Invoice[]) => {
+      .then((res) => res.json() as Promise<Invoice[]>)
+      .then((data) => {
         setInvoices(data);
 
         // サマリー計算

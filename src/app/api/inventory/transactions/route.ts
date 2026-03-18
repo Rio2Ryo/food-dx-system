@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 // 取引履歴一覧取得
 export async function GET(request: NextRequest) {
+  const prisma = await getPrisma();
   const searchParams = request.nextUrl.searchParams;
   const inventoryId = searchParams.get("inventoryId");
   const type = searchParams.get("type");
@@ -42,7 +43,9 @@ export async function GET(request: NextRequest) {
 
 // 手動取引作成（入庫・出庫・調整）
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const prisma = await getPrisma();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body = (await request.json()) as any;
 
   const inventory = await prisma.inventory.findUnique({
     where: { id: body.inventoryId },

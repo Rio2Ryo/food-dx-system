@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import {
   exportToYayoi,
   exportToFreee,
@@ -9,8 +9,14 @@ import {
 
 // 会計データエクスポート
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { companyId, format, periodStart, periodEnd } = body;
+  const prisma = await getPrisma();
+  const body = (await request.json()) as Record<string, unknown>;
+  const { companyId, format, periodStart, periodEnd } = body as {
+    companyId: string;
+    format: string;
+    periodStart: string;
+    periodEnd: string;
+  };
 
   if (!companyId || !format || !periodStart || !periodEnd) {
     return NextResponse.json(
@@ -116,6 +122,7 @@ export async function POST(request: NextRequest) {
 
 // エクスポート履歴取得
 export async function GET(request: NextRequest) {
+  const prisma = await getPrisma();
   const searchParams = request.nextUrl.searchParams;
   const companyId = searchParams.get("companyId");
 

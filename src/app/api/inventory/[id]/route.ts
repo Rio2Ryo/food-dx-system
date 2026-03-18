@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 // 在庫詳細取得（取引履歴付き）
 export async function GET(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const prisma = await getPrisma();
+  const { id } = await params;
   const inventory = await prisma.inventory.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       product: true,
       company: true,
@@ -30,12 +32,15 @@ export async function GET(
 // 在庫調整（ADJUSTMENT取引を自動作成）
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const body = await request.json();
+  const prisma = await getPrisma();
+  const { id } = await params;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body = (await request.json()) as any;
 
   const existing = await prisma.inventory.findUnique({
-    where: { id: params.id },
+    where: { id },
   });
 
   if (!existing) {
@@ -43,7 +48,7 @@ export async function PATCH(
   }
 
   const updatedInventory = await prisma.inventory.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       quantity: body.quantity ?? existing.quantity,
       expiryDate: body.expiryDate !== undefined
@@ -62,7 +67,7 @@ export async function PATCH(
     const adjustmentQty = Number(body.quantity) - Number(existing.quantity);
     await prisma.inventoryTransaction.create({
       data: {
-        inventoryId: params.id,
+        inventoryId: id,
         type: "ADJUSTMENT",
         quantity: adjustmentQty,
         reason: body.reason ?? "棚卸調整",
@@ -78,10 +83,12 @@ export async function PATCH(
 // 在庫削除
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const prisma = await getPrisma();
+  const { id } = await params;
   const existing = await prisma.inventory.findUnique({
-    where: { id: params.id },
+    where: { id },
   });
 
   if (!existing) {
@@ -90,11 +97,11 @@ export async function DELETE(
 
   // 関連する取引履歴も削除
   await prisma.inventoryTransaction.deleteMany({
-    where: { inventoryId: params.id },
+    where: { inventoryId: id },
   });
 
   await prisma.inventory.delete({
-    where: { id: params.id },
+    where: { id },
   });
 
   return NextResponse.json({ message: "在庫を削除しました" });

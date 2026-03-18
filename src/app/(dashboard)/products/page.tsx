@@ -16,7 +16,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     fetch("/api/products")
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<Product[]>)
       .then(setProducts);
   }, []);
 

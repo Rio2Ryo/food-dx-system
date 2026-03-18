@@ -93,7 +93,7 @@ export default function OcrPage() {
     try {
       const res = await fetch("/api/ocr");
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as OcrScanResult[];
         setRecentScans(data);
       }
     } catch {
@@ -158,7 +158,7 @@ export default function OcrPage() {
         body: formData,
       });
 
-      const data = await res.json();
+      const data = await res.json() as OcrScanResult & { error?: string };
 
       if (!res.ok) {
         setError(data.error || "OCR処理に失敗しました");

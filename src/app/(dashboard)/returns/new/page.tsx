@@ -71,7 +71,7 @@ export default function NewReturnPage() {
   // 納品済の発注を検索
   useEffect(() => {
     fetch("/api/orders?status=DELIVERED")
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<Order[]>)
       .then(setOrders);
   }, []);
 
@@ -171,7 +171,7 @@ export default function NewReturnPage() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json() as { error?: string };
         setError(data.error || "返品申請の作成に失敗しました");
         return;
       }

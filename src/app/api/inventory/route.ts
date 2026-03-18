@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 // 在庫一覧取得
 export async function GET(request: NextRequest) {
+  const prisma = await getPrisma();
   const searchParams = request.nextUrl.searchParams;
   const companyId = searchParams.get("companyId");
   const productId = searchParams.get("productId");
@@ -44,7 +45,9 @@ export async function GET(request: NextRequest) {
 
 // 在庫登録・更新（upsert）
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const prisma = await getPrisma();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body = (await request.json()) as any;
 
   const inventory = await prisma.inventory.upsert({
     where: {

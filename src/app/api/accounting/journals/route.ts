@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 // 仕訳一覧取得
 export async function GET(request: NextRequest) {
+  const prisma = await getPrisma();
   const searchParams = request.nextUrl.searchParams;
   const companyId = searchParams.get("companyId");
   const from = searchParams.get("from");
@@ -38,8 +39,22 @@ export async function GET(request: NextRequest) {
 
 // 手動仕訳作成
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { companyId, createdById, description, entryDate, lines } = body;
+  const prisma = await getPrisma();
+  const body = (await request.json()) as Record<string, unknown>;
+  const { companyId, createdById, description, entryDate, lines } = body as {
+    companyId: string;
+    createdById: string;
+    description: string;
+    entryDate: string;
+    lines: Array<{
+      accountCode: string;
+      accountName: string;
+      debitAmount: number;
+      creditAmount: number;
+      taxCategory?: string;
+      description?: string;
+    }>;
+  };
 
   if (!lines || lines.length === 0) {
     return NextResponse.json(

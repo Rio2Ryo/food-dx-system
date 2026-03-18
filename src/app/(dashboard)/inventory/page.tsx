@@ -98,8 +98,8 @@ export default function InventoryPage() {
     if (expiringSoonOnly) params.set("expiringSoon", "7");
 
     fetch(`/api/inventory?${params.toString()}`)
-      .then((res) => res.json())
-      .then((data: InventoryItem[]) => {
+      .then((res) => res.json() as Promise<InventoryItem[]>)
+      .then((data) => {
         setInventory(data);
         const cats = Array.from(
           new Set(
@@ -121,8 +121,8 @@ export default function InventoryPage() {
   useEffect(() => {
     // カテゴリ一覧のため全在庫を1回取得
     fetch("/api/inventory")
-      .then((res) => res.json())
-      .then((data: InventoryItem[]) => {
+      .then((res) => res.json() as Promise<InventoryItem[]>)
+      .then((data) => {
         const cats = Array.from(
           new Set(
             data
@@ -172,8 +172,8 @@ export default function InventoryPage() {
       fetch("/api/products"),
       fetch("/api/inventory"),
     ]);
-    const productsData = await productsRes.json();
-    const inventoryData: InventoryItem[] = await inventoryRes.json();
+    const productsData = await productsRes.json() as ProductOption[];
+    const inventoryData = await inventoryRes.json() as InventoryItem[];
     setProducts(productsData);
     // 企業一覧を在庫データから抽出
     const companiesMap = new Map<string, string>();
@@ -210,7 +210,7 @@ export default function InventoryPage() {
       companyId: newStockForm.companyId,
     });
     const existingRes = await fetch(`/api/inventory?${params.toString()}`);
-    const existingData: InventoryItem[] = await existingRes.json();
+    const existingData = await existingRes.json() as InventoryItem[];
 
     const matchingInventory = existingData.find(
       (item) =>

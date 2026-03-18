@@ -68,8 +68,8 @@ export default function ExportPage() {
   // 企業一覧取得（簡易的にinvoicesから取得）
   useEffect(() => {
     fetch("/api/invoices")
-      .then((res) => res.json())
-      .then((invoices: { issuerCompanyId: string; issuerCompany: { id: string; name: string } }[]) => {
+      .then((res) => res.json() as Promise<{ issuerCompanyId: string; issuerCompany: { id: string; name: string } }[]>)
+      .then((invoices) => {
         const companyMap = new Map<string, string>();
         invoices.forEach((inv) => {
           companyMap.set(inv.issuerCompanyId, inv.issuerCompany.name);
@@ -91,7 +91,7 @@ export default function ExportPage() {
     if (companyId) params.set("companyId", companyId);
 
     fetch(`/api/accounting/export?${params.toString()}`)
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<ExportRecord[]>)
       .then(setExportHistory);
   }, [companyId]);
 
@@ -116,7 +116,7 @@ export default function ExportPage() {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json() as { error?: string; csvContent: string; fileName: string; formatLabel: string; entryCount: number };
 
       if (!res.ok) {
         setMessage({ type: "error", text: data.error ?? "エクスポートに失敗しました" });
@@ -147,7 +147,7 @@ export default function ExportPage() {
       const historyRes = await fetch(
         `/api/accounting/export?${params.toString()}`
       );
-      const history = await historyRes.json();
+      const history = await historyRes.json() as ExportRecord[];
       setExportHistory(history);
     } catch {
       setMessage({ type: "error", text: "エクスポート処理中にエラーが発生しました" });

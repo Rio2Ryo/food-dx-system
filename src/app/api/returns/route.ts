@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 // 返品一覧取得
 export async function GET(request: NextRequest) {
+  const prisma = await getPrisma();
   const searchParams = request.nextUrl.searchParams;
   const status = searchParams.get("status");
   const companyId = searchParams.get("companyId");
@@ -41,7 +42,9 @@ export async function GET(request: NextRequest) {
 
 // 返品申請作成
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const prisma = await getPrisma();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body = (await request.json()) as any;
 
   // 元発注の存在確認とステータスチェック
   const originalOrder = await prisma.order.findUnique({

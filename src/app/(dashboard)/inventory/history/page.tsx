@@ -56,7 +56,7 @@ export default function InventoryHistoryPage() {
     if (dateTo) params.set("dateTo", dateTo);
 
     fetch(`/api/inventory/transactions?${params.toString()}`)
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<Transaction[]>)
       .then(setTransactions);
   }, [typeFilter, dateFrom, dateTo]);
 

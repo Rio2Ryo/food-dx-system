@@ -65,7 +65,7 @@ export default function ReturnsPage() {
     if (filterStatus) params.set("status", filterStatus);
 
     fetch(`/api/returns?${params.toString()}`)
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<ReturnOrder[]>)
       .then(setReturns);
   }, [filterStatus]);
 

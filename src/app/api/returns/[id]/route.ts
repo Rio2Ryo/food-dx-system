@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 // 返品詳細取得
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const prisma = await getPrisma();
+  const { id } = await params;
   const returnOrder = await prisma.returnOrder.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       originalOrder: {
         include: {
@@ -37,12 +39,15 @@ export async function GET(
 // 返品ステータス更新
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const body = await request.json();
+  const prisma = await getPrisma();
+  const { id } = await params;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const body = (await request.json()) as any;
 
   const existing = await prisma.returnOrder.findUnique({
-    where: { id: params.id },
+    where: { id },
   });
 
   if (!existing) {
@@ -97,7 +102,7 @@ export async function PATCH(
   }
 
   const returnOrder = await prisma.returnOrder.update({
-    where: { id: params.id },
+    where: { id },
     data: updateData,
     include: {
       originalOrder: true,

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 // 請求書一覧取得
 export async function GET(request: NextRequest) {
+  const prisma = await getPrisma();
   const searchParams = request.nextUrl.searchParams;
   const companyId = searchParams.get("companyId");
   const status = searchParams.get("status");
@@ -39,7 +40,8 @@ export async function GET(request: NextRequest) {
 
 // 請求書作成（発注から自動生成）
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const prisma = await getPrisma();
+  const body = (await request.json()) as Record<string, unknown>;
   const {
     orderId,
     issuerCompanyId,
@@ -48,7 +50,15 @@ export async function POST(request: NextRequest) {
     taxRate: customTaxRate,
     notes,
     createdById,
-  } = body;
+  } = body as {
+    orderId: string;
+    issuerCompanyId: string;
+    recipientCompanyId: string;
+    dueDate: string;
+    taxRate?: number;
+    notes?: string;
+    createdById?: string;
+  };
 
   // 発注情報を取得
   const order = await prisma.order.findUnique({

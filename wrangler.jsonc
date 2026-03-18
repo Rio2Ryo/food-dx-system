@@ -1,0 +1,17 @@
+{
+  "name": "food-dx-system",
+  "main": ".open-next/worker.js",
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "compatibility_flags": ["nodejs_compat"],
+  "compatibility_date": "2025-12-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "food-dx-system-db",
+      "database_id": "3aba2b39-452a-4c1b-ba1f-11a35debc57c"
+    }
+  ]
+}

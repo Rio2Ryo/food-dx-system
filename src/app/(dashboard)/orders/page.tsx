@@ -17,7 +17,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     fetch("/api/orders")
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<Order[]>)
       .then(setOrders);
   }, []);
 

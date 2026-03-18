@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 /**
  * OCR解析結果を確定し、発注データを作成する
@@ -20,9 +20,11 @@ import { prisma } from "@/lib/prisma";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const scanId = params.id;
+  const prisma = await getPrisma();
+  const { id } = await params;
+  const scanId = id;
 
   // OCRスキャンレコードの確認
   const scan = await prisma.ocrScan.findUnique({
@@ -51,8 +53,15 @@ export async function POST(
   }
 
   try {
-    const body = await request.json();
-    const { buyerCompanyId, supplierCompanyId, orderedById, deliveryDate, notes, items } = body;
+    const body = (await request.json()) as Record<string, unknown>;
+    const { buyerCompanyId, supplierCompanyId, orderedById, deliveryDate, notes, items } = body as {
+      buyerCompanyId: string;
+      supplierCompanyId: string;
+      orderedById: string;
+      deliveryDate?: string;
+      notes?: string;
+      items: Array<{ productId: string; quantity: number; unitPrice: number }>;
+    };
 
     // バリデーション
     if (!buyerCompanyId || !supplierCompanyId || !orderedById) {

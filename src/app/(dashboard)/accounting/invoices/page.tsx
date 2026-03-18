@@ -55,7 +55,7 @@ export default function InvoicesPage() {
     if (filterStatus) params.set("status", filterStatus);
 
     fetch(`/api/invoices?${params.toString()}`)
-      .then((res) => res.json())
+      .then((res) => res.json() as Promise<Invoice[]>)
       .then(setInvoices);
   }, [filterStatus]);
 

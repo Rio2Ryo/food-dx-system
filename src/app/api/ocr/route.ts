@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { extractTextFromImage } from "@/lib/vision";
 import { parseOrderDocument } from "@/lib/ocr-parser";
 import { matchProductsGlobal } from "@/lib/product-matcher";
 
 // OCRスキャン一覧取得
 export async function GET() {
+  const prisma = await getPrisma();
   const scans = await prisma.ocrScan.findMany({
     orderBy: { createdAt: "desc" },
     take: 20,
@@ -31,6 +32,7 @@ export async function GET() {
 
 // OCRで注文書画像を読み取り・解析
 export async function POST(request: NextRequest) {
+  const prisma = await getPrisma();
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
 
@@ -55,9 +57,9 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    // OCRテキスト抽出
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const rawText = await extractTextFromImage(buffer);
+    // OCRテキスト抽出 (Uint8Array is used instead of Buffer for Cloudflare Workers compatibility)
+    const arrayBuffer = await file.arrayBuffer();
+    const rawText = await extractTextFromImage(arrayBuffer);
 
     if (!rawText || rawText.trim().length === 0) {
       const updatedScan = await prisma.ocrScan.update({
