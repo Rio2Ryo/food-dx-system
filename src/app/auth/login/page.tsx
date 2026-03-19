@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { isValidEmail } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const callbackUrl = "/ocr";
+  const [email, setEmail] = useState("demo@foodflow.local");
+  const [password, setPassword] = useState("DemoFoodFlow2026!");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -32,21 +32,28 @@ export default function LoginPage() {
     }
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
+      const response = await fetch("/api/demo-login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password, callbackUrl }),
       });
 
-      if (result?.error) {
-        setError(result.error);
-      } else if (result?.ok) {
-        // Redirect to dashboard or home
-        router.push("/ocr");
+      const payload = (await response.json()) as {
+        ok?: boolean;
+        error?: string;
+        redirectTo?: string;
+      };
+
+      if (!response.ok) {
+        setError(payload.error || "ログインに失敗しました");
+      } else {
+        router.push(payload.redirectTo || "/ocr");
         router.refresh();
       }
     } catch (err) {
-      setError("An error occurred during login. Please try again.");
+      setError("ログイン中にエラーが発生しました。もう一度試してください。");
     } finally {
       setIsLoading(false);
     }
@@ -64,13 +71,18 @@ export default function LoginPage() {
             Welcome back
           </h2>
           <p className="mt-2 text-sm text-slate-600">
-            Sign in to your account to continue
+            デモアカウントでログインして画面を確認できます
           </p>
         </div>
 
         {/* Form */}
         <div className="mt-8 bg-white p-8 shadow-xl rounded-2xl border border-slate-100">
           <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+              <p className="font-semibold">デモアカウント</p>
+              <p className="mt-1">Email: demo@foodflow.local</p>
+              <p>Password: DemoFoodFlow2026!</p>
+            </div>
             {error && (
               <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
                 {error}

@@ -99,7 +99,7 @@ export default function DashboardLayout({
                   href="/auth/login"
                   className="text-xs text-slate-400 hover:text-indigo-600"
                 >
-                  ログイン画面へ
+                  デモログイン
                 </Link>
               </div>
             </div>

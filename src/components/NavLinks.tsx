@@ -67,7 +67,7 @@ export default function NavLinks({ items }: { items: NavItem[] }) {
           href="/auth/login"
           className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
         >
-          Login
+          Demo Sign in
         </Link>
       </div>
     </>
