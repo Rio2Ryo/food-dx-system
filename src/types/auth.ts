@@ -1,5 +1,5 @@
 /**
- * Authentication Types for CITTA handcho
+ * Authentication Types for 食品流通システム
  */
 
 // ============================================================================

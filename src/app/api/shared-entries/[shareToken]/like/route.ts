@@ -63,21 +63,17 @@ export async function POST(
     // Check if already liked
     let existingLike = null;
     if (userId) {
-      existingLike = await prisma.entryLike.findUnique({
+      existingLike = await prisma.entryLike.findFirst({
         where: {
-          like_user_unique: {
-            entryId,
-            userId,
-          },
+          entryId,
+          userId,
         },
       });
     } else if (ipAddress) {
-      existingLike = await prisma.entryLike.findUnique({
+      existingLike = await prisma.entryLike.findFirst({
         where: {
-          like_anonymous_unique: {
-            entryId,
-            ipAddress,
-          },
+          entryId,
+          ipAddress,
         },
       });
     }

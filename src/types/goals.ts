@@ -10,8 +10,8 @@ export interface Goal {
   userId: string;
   title: string;
   content?: string | null;
-  targetDate?: Date | string | null;
-  isCompleted: boolean;
+  target?: Date | string | null;
+  completed: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
 }
@@ -34,7 +34,7 @@ export interface WakuWakuMoment {
 export interface GoalFormState {
   title: string;
   content: string;
-  targetDate: string;
+  target: string;
 }
 
 /**
@@ -46,7 +46,7 @@ export type GoalFilter = "all" | "active" | "completed";
  * Get display status for a goal
  */
 export function getGoalStatus(goal: Goal): "active" | "completed" {
-  return goal.isCompleted ? "completed" : "active";
+  return goal.completed ? "completed" : "active";
 }
 
 /**
@@ -82,10 +82,10 @@ export function formatDate(date: Date | string | null): string {
  * Check if a goal is overdue
  */
 export function isOverdue(goal: Goal): boolean {
-  if (!goal.targetDate || goal.isCompleted) return false;
+  if (!goal.target || goal.completed) return false;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const target = new Date(goal.targetDate);
+  const target = new Date(goal.target);
   target.setHours(0, 0, 0, 0);
   return target < today;
 }

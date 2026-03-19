@@ -63,7 +63,7 @@ export async function validateShareToken(
     return { isValid: false, expired: true, error: "Link has expired" };
   }
 
-  return { isValid: true, sharedEntry };
+  return { isValid: true, sharedEntry: sharedEntry as any };
 }
 
 /**
@@ -254,8 +254,8 @@ export async function getSharedEntryData(
       shareToken: sharedEntry.shareToken,
       entryId: sharedEntry.entryId,
       sharedById: sharedEntry.sharedById,
-      sharedByName: sharedEntry.sharedBy.name,
-      sharedByAvatarUrl: sharedEntry.sharedBy.avatarUrl || undefined,
+      sharedByName: sharedEntry.sharedBy.name ?? undefined,
+      sharedByAvatarUrl: sharedEntry.sharedBy.avatarUrl ?? undefined,
       viewCount: sharedEntry.viewCount + 1, // +1 for current view
       expiresAt: sharedEntry.expiresAt?.toISOString() ?? null,
       createdAt: sharedEntry.createdAt.toISOString(),
@@ -299,15 +299,6 @@ export async function recordSharedEntryView(
       where: { id: sharedEntry.id },
       data: { viewCount: { increment: 1 } },
     });
-
-    // Record access
-    await prisma.sharedEntryUser.create({
-      data: {
-        sharedEntryId: sharedEntry.id,
-        userId: userId ?? undefined,
-        ipAddress: ipAddress ?? undefined,
-      },
-    });
   } catch (error) {
     console.error("Failed to record shared entry view:", error);
   }
@@ -337,21 +328,17 @@ export async function toggleSharedEntryLike(
     // Check if already liked
     let existingLike = null;
     if (userId) {
-      existingLike = await prisma.entryLike.findUnique({
+      existingLike = await prisma.entryLike.findFirst({
         where: {
-          like_user_unique: {
-            entryId,
-            userId,
-          },
+          entryId,
+          userId,
         },
       });
     } else if (ipAddress) {
-      existingLike = await prisma.entryLike.findUnique({
+      existingLike = await prisma.entryLike.findFirst({
         where: {
-          like_anonymous_unique: {
-            entryId,
-            ipAddress,
-          },
+          entryId,
+          ipAddress,
         },
       });
     }
@@ -421,12 +408,10 @@ export async function checkUserLike(
 ): Promise<boolean> {
   try {
     const prisma = await getPrisma();
-    const like = await prisma.entryLike.findUnique({
+    const like = await prisma.entryLike.findFirst({
       where: {
-        like_user_unique: {
-          entryId,
-          userId,
-        },
+        entryId,
+        userId,
       },
     });
     return !!like;

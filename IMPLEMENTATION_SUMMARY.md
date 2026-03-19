@@ -1,7 +1,7 @@
-# CITTA handcho - 24h Vertical Weekly View Implementation Summary
+# 食品流通システム - 24h Vertical Weekly View Implementation Summary
 
 ## Overview
-Successfully implemented a 24h vertical weekly calendar view for the CITTA handcho app with handwriting input support.
+Successfully implemented a 24h vertical weekly calendar view for the 食品流通システム app with handwriting input support.
 
 ## Component Structure
 

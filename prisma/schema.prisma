@@ -8,253 +8,131 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 企業（発注元・受注先）
-model Company {
-  id        String   @id @default(cuid())
-  name      String
-  code      String   @unique
-  address   String?
-  phone     String?
-  email     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ============================================
+// 食品流通システム - User Authentication
+// ============================================
 
-  users            User[]
-  sentOrders       Order[]            @relation("OrderBuyer")
-  receivedOrders   Order[]            @relation("OrderSupplier")
-  products         Product[]
-  inventory        Inventory[]        @relation("CompanyInventory")
-  issuedInvoices   Invoice[]          @relation("IssuedInvoices")
-  receivedInvoices Invoice[]          @relation("ReceivedInvoices")
-  companyJournals  JournalEntry[]     @relation("CompanyJournals")
-  companyExports   AccountingExport[] @relation("CompanyExports")
-  buyerReturns     ReturnOrder[]      @relation("BuyerReturns")
-  supplierReturns  ReturnOrder[]      @relation("SupplierReturns")
-}
-
-// ユーザー
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
-  name      String
-  role      String   @default("STAFF") // ADMIN, MANAGER, STAFF
-  companyId String
+  name      String?
+  password  String   // Hashed password (bcrypt)
+  avatarUrl String?
+  role      String   @default("USER") // ADMIN, USER
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  company               Company                @relation(fields: [companyId], references: [id])
-  orders                Order[]
-  performedTransactions InventoryTransaction[] @relation("PerformedTransactions")
-  createdJournals       JournalEntry[]         @relation("CreatedJournals")
-  requestedReturns      ReturnOrder[]          @relation("RequestedReturns")
-  approvedReturns       ReturnOrder[]          @relation("ApprovedReturns")
+  // Relations
+  diaries   Diary[]    @relation("UserDiaries")
+  goals     Goal[]     @relation("UserGoals")
+  entries   Entry[]    @relation("UserEntries")
+  sharedBy  SharedEntry[]
+  likedBy   EntryLike[]
+
+  @@map("users")
 }
 
-// 商品マスタ
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  code        String   @unique
-  description String?
-  unit        String // 単位（kg, 個, 箱 等）
-  price       Decimal
-  category    String?
-  companyId   String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// ============================================
+// 食品流通システム - Core Features
+// ============================================
 
-  company     Company           @relation(fields: [companyId], references: [id])
-  orderItems  OrderItem[]
-  inventory   Inventory[]
-  returnItems ReturnOrderItem[]
+// 日記（Diary - legacy, kept for compatibility）
+model Diary {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  date      DateTime @default(now())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation("UserDiaries", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("diaries")
 }
 
-// 発注
-model Order {
-  id                String   @id @default(cuid())
-  orderNumber       String   @unique
-  status            String   @default("DRAFT") // DRAFT, SUBMITTED, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
-  buyerCompanyId    String
-  supplierCompanyId String
-  orderedById       String
-  orderDate         DateTime @default(now())
-  deliveryDate      DateTime?
-  notes             String?
-  totalAmount       Decimal  @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+// 目標（Goal - WakuWaku List / Target Management）
+model Goal {
+  id        String   @id @default(cuid())
+  title     String
+  content   String?  // Optional description
+  target    DateTime? // Optional target date
+  completed Boolean  @default(false)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  buyer     Company       @relation("OrderBuyer", fields: [buyerCompanyId], references: [id])
-  supplier  Company       @relation("OrderSupplier", fields: [supplierCompanyId], references: [id])
-  orderedBy User          @relation(fields: [orderedById], references: [id])
-  items     OrderItem[]
-  ocrScans  OcrScan[]
-  invoices  Invoice[]
-  returns   ReturnOrder[]
+  user User @relation("UserGoals", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
 }
 
-// 発注明細
-model OrderItem {
-  id        String  @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Decimal
-  unitPrice Decimal
-  amount    Decimal
+// エントリ（Entry - 24h Weekly View）
+model Entry {
+  id          String          @id @default(cuid())
+  userId      String
+  year        Int
+  week        Int
+  dayOfWeek   Int             // 0=Sunday, 1=Monday, ..., 6=Saturday
+  hour        Int             // 0-23
+  content     String?
+  isCompleted Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  user      User            @relation("UserEntries", fields: [userId], references: [id])
+  images    EntryImage[]
+  likes     EntryLike[]
+  shared    SharedEntry?
+
+  @@unique([userId, year, week, dayOfWeek, hour])
+  @@map("entries")
 }
 
-// OCRスキャン履歴
-model OcrScan {
+// エントリ画像（Entry Image - Handwriting images）
+model EntryImage {
+  id        String   @id @default(cuid())
+  entryId   String
+  imageUrl  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  entry Entry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@map("entry_images")
+}
+
+// ============================================
+// 食品流通システム - Sharing & Likes
+// ============================================
+
+// 共有エントリ（Shared Entry - Secure token-based sharing）
+model SharedEntry {
   id           String   @id @default(cuid())
-  orderId      String?
-  imageUrl     String
-  rawText      String?
-  parsedData   String? // JSON string (SQLite does not support Json type)
-  status       String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
-  documentType String? // ORDER, DELIVERY_NOTE, INVOICE
-  confidence   Float? // 解析信頼度 0-1
+  entryId      String   @unique
+  sharedById   String
+  shareToken   String   @unique
+  viewCount    Int      @default(0)
+  expiresAt    DateTime?
   createdAt    DateTime @default(now())
 
-  order Order? @relation(fields: [orderId], references: [id])
+  sharedBy User    @relation(fields: [sharedById], references: [id])
+  entry    Entry   @relation(fields: [entryId], references: [id])
+
+  @@map("shared_entries")
 }
 
-// 在庫
-model Inventory {
-  id           String                 @id @default(cuid())
-  productId    String
-  product      Product                @relation(fields: [productId], references: [id])
-  companyId    String
-  company      Company                @relation("CompanyInventory", fields: [companyId], references: [id])
-  quantity     Decimal
-  lotNumber    String?
-  expiryDate   DateTime?
-  location     String? // 倉庫・棚番号
-  updatedAt    DateTime               @updatedAt
-  createdAt    DateTime               @default(now())
-  transactions InventoryTransaction[]
+// エントリアイク（Entry Like - Like system）
+model EntryLike {
+  id        String   @id @default(cuid())
+  entryId   String
+  userId    String?
+  ipAddress String?  // For anonymous likes
+  createdAt DateTime @default(now())
 
-  @@unique([productId, companyId, lotNumber])
-}
+  entry Entry? @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-// 在庫取引履歴
-model InventoryTransaction {
-  id            String   @id @default(cuid())
-  inventoryId   String
-  inventory     Inventory @relation(fields: [inventoryId], references: [id])
-  type          String // IN, OUT, ADJUSTMENT, RETURN_IN, RETURN_OUT
-  quantity      Decimal
-  reason        String?
-  referenceId   String? // 関連する発注ID等
-  referenceType String? // "ORDER", "RETURN", "ADJUSTMENT"
-  performedById String?
-  performedBy   User?    @relation("PerformedTransactions", fields: [performedById], references: [id])
-  createdAt     DateTime @default(now())
-}
-
-// 請求書
-model Invoice {
-  id                 String         @id @default(cuid())
-  invoiceNumber      String         @unique // INV-YYYYMMDD-XXX format
-  orderId            String
-  order              Order          @relation(fields: [orderId], references: [id])
-  issuerCompanyId    String
-  issuerCompany      Company        @relation("IssuedInvoices", fields: [issuerCompanyId], references: [id])
-  recipientCompanyId String
-  recipientCompany   Company        @relation("ReceivedInvoices", fields: [recipientCompanyId], references: [id])
-  issueDate          DateTime       @default(now())
-  dueDate            DateTime
-  subtotal           Decimal
-  taxRate            Decimal        @default(0.10) // 消費税率
-  taxAmount          Decimal
-  totalAmount        Decimal
-  status             String         @default("DRAFT") // DRAFT, ISSUED, SENT, PAID, OVERDUE, CANCELLED
-  notes              String?
-  journalEntries     JournalEntry[]
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-}
-
-// 仕訳
-model JournalEntry {
-  id          String        @id @default(cuid())
-  invoiceId   String?
-  invoice     Invoice?      @relation(fields: [invoiceId], references: [id])
-  entryDate   DateTime      @default(now())
-  description String
-  lines       JournalLine[]
-  companyId   String
-  company     Company       @relation("CompanyJournals", fields: [companyId], references: [id])
-  createdById String
-  createdBy   User          @relation("CreatedJournals", fields: [createdById], references: [id])
-  isPosted    Boolean       @default(false)
-  createdAt   DateTime      @default(now())
-}
-
-// 仕訳明細
-model JournalLine {
-  id             String       @id @default(cuid())
-  journalEntryId String
-  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
-  accountCode    String // 勘定科目コード
-  accountName    String // 勘定科目名
-  debitAmount    Decimal      @default(0)
-  creditAmount   Decimal      @default(0)
-  taxCategory    String? // 税区分
-  description    String?
-}
-
-// 会計エクスポート
-model AccountingExport {
-  id          String   @id @default(cuid())
-  companyId   String
-  company     Company  @relation("CompanyExports", fields: [companyId], references: [id])
-  format      String // YAYOI, FREEE, MONEYFORWARD, CSV_GENERIC
-  periodStart DateTime
-  periodEnd   DateTime
-  fileName    String
-  status      String   @default("PENDING") // PENDING, COMPLETED, FAILED
-  exportedAt  DateTime?
-  createdAt   DateTime @default(now())
-}
-
-// 返品処理・赤伝
-model ReturnOrder {
-  id                String            @id @default(cuid())
-  returnNumber      String            @unique // RET-YYYYMMDD-XXX format
-  originalOrderId   String
-  originalOrder     Order             @relation(fields: [originalOrderId], references: [id])
-  buyerCompanyId    String
-  buyerCompany      Company           @relation("BuyerReturns", fields: [buyerCompanyId], references: [id])
-  supplierCompanyId String
-  supplierCompany   Company           @relation("SupplierReturns", fields: [supplierCompanyId], references: [id])
-  requestedById     String
-  requestedBy       User              @relation("RequestedReturns", fields: [requestedById], references: [id])
-  approvedById      String?
-  approvedBy        User?             @relation("ApprovedReturns", fields: [approvedById], references: [id])
-  status            String            @default("REQUESTED") // REQUESTED, APPROVED, REJECTED, SHIPPED, RECEIVED, CREDITED, COMPLETED
-  returnDate        DateTime          @default(now())
-  reason            String // QUALITY_ISSUE, WRONG_ITEM, QUANTITY_ERROR, EXPIRY_ISSUE, DAMAGE, ORDER_CANCEL, OTHER
-  reasonDetail      String?
-  totalAmount       Decimal
-  notes             String?
-  items             ReturnOrderItem[]
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-}
-
-// 返品明細
-model ReturnOrderItem {
-  id            String      @id @default(cuid())
-  returnOrderId String
-  returnOrder   ReturnOrder @relation(fields: [returnOrderId], references: [id], onDelete: Cascade)
-  productId     String
-  product       Product     @relation(fields: [productId], references: [id])
-  quantity      Decimal
-  unitPrice     Decimal
-  amount        Decimal
-  condition     String      @default("UNOPENED") // UNOPENED, OPENED, DAMAGED, EXPIRED
+  @@unique([entryId, userId, ipAddress])
+  @@map("entry_likes")
 }

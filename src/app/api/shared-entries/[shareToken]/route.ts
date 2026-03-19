@@ -59,16 +59,6 @@ export async function GET(
       data: { viewCount: { increment: 1 } },
     });
 
-    // Record access (without user info if not authenticated)
-    const headers = request.headers;
-    const ipAddress = headers.get("x-forwarded-for") || headers.get("cf-connecting-ip");
-    await prisma.sharedEntryUser.create({
-      data: {
-        sharedEntryId: sharedEntry.id,
-        ipAddress: ipAddress ?? undefined,
-      },
-    });
-
     // Build response data
     const images = sharedEntry.entry.images.map((img) => ({
       id: img.id,
@@ -97,12 +87,10 @@ export async function GET(
     const userId = request.headers.get("x-user-id");
     let userHasLiked = false;
     if (userId) {
-      const like = await prisma.entryLike.findUnique({
+      const like = await prisma.entryLike.findFirst({
         where: {
-          like_user_unique: {
-            entryId: sharedEntry.entryId,
-            userId,
-          },
+          entryId: sharedEntry.entryId,
+          userId,
         },
       });
       userHasLiked = !!like;

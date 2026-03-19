@@ -1,13 +1,12 @@
 /**
- * NextAuth.js Configuration for CITTA handcho
- * 
+ * NextAuth.js Configuration for 食品流通システム
+ *
  * This file configures NextAuth.js to work with Cloudflare Workers and D1 Database.
  * Uses credentials provider for email/password authentication.
  */
 
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { getDb } from "@/lib/auth";
 import { verifyPassword } from "@/lib/auth";
 import { findUserByEmail } from "@/lib/auth";
 
@@ -42,11 +41,10 @@ const authConfig = NextAuth({
         token.email = user.email;
         token.name = user.name;
         token.role = user.role;
-        token.companyId = user.companyId;
       }
       return token;
     },
-    
+
     // Session callback - add user data to session
     async session({ session, token }) {
       if (token) {
@@ -54,7 +52,6 @@ const authConfig = NextAuth({
         session.user.email = token.email as string;
         session.user.name = token.name as string;
         session.user.role = token.role as string;
-        session.user.companyId = token.companyId as string;
       }
       return session;
     },
@@ -85,17 +82,17 @@ const authConfig = NextAuth({
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password are required");
         }
-        
-        const email = credentials.email.toLowerCase();
-        const password = credentials.password;
+
+        const email = (credentials.email as string).toLowerCase();
+        const password = credentials.password as string;
         
         // Find user by email
-        const user = await findUserByEmail(email);
-        
+        const user = (await findUserByEmail(email)) as { id: string; email: string; name?: string | null; password: string; role: string };
+
         if (!user) {
           throw new Error("No user found with this email");
         }
-        
+
         // Verify password
         const isValid = await verifyPassword(password, user.password);
         
@@ -107,27 +104,23 @@ const authConfig = NextAuth({
         return {
           id: user.id,
           email: user.email,
-          name: user.name,
+          name: user.name ?? undefined,
           role: user.role,
-          companyId: user.companyId,
         };
       },
     }),
   ],
-  
+
   // Events for logging
   events: {
     async signIn(message) {
-      console.log("User signed in:", message.user?.email);
+      console.log("User signed in:", (message as any).user?.email);
     },
     async signOut(message) {
-      console.log("User signed out:", message.user?.email);
-    },
-    async error(message) {
-      console.error("Auth error:", message);
+      console.log("User signed out:", (message as any).user?.email);
     },
   },
-  
+
   // Debug mode (set to true during development)
   debug: process.env.NODE_ENV === "development",
 });
@@ -149,26 +142,14 @@ declare module "next-auth" {
     email: string;
     name?: string;
     role: string;
-    companyId?: string;
   }
-  
+
   interface Session {
     user: {
       id: string;
       email: string;
       name?: string;
       role: string;
-      companyId?: string;
     };
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    id: string;
-    email: string;
-    name?: string;
-    role: string;
-    companyId?: string;
   }
 }

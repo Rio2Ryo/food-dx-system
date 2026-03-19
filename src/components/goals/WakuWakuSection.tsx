@@ -101,7 +101,7 @@ export function WakuWakuEntry({
               onClick={() => onToggle(entry.id)}
               className={`
                 flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors
-                ${entry.isCompleted
+                ${entry.completed
                   ? "bg-pink-100 text-pink-700"
                   : "bg-pink-50 text-pink-600 hover:bg-pink-100"
                 }
@@ -110,7 +110,7 @@ export function WakuWakuEntry({
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
               </svg>
-              {entry.isCompleted ? "Saved" : "Save to WakuWaku"}
+              {entry.completed ? "Saved" : "Save to WakuWaku"}
             </button>
           </div>
         </div>
@@ -141,7 +141,7 @@ export function WakuWakuSection({
         userId: "current-user-id",
         title: newContent.trim(),
         content: newContent.trim(),
-        targetDate: null,
+        target: null,
       });
       setNewContent("");
       setShowAddForm(false);

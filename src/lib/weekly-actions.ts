@@ -12,22 +12,35 @@ export async function createEntry(entryData: {
   week: number;
   dayOfWeek: number;
   hour: number;
-  content?: string;
+  content?: string | null;
   isCompleted: boolean;
 }) {
   const prisma = await getPrisma();
   const entry = await prisma.entry.create({
     data: entryData,
+    include: {
+      images: true,
+    },
   });
   revalidatePath("/weekly-view");
-  return entry;
+
+  // Convert Date to string for compatibility with WeeklyEntry type
+  return {
+    ...entry,
+    createdAt: entry.createdAt.toISOString(),
+    updatedAt: entry.updatedAt.toISOString(),
+    images: entry.images?.map((img) => ({
+      ...img,
+      createdAt: img.createdAt.toISOString(),
+    })),
+  };
 }
 
 /**
  * Update an existing entry
  */
 export async function updateEntry(entryId: string, updates: {
-  content?: string;
+  content?: string | null;
   isCompleted?: boolean;
 }) {
   const prisma = await getPrisma();

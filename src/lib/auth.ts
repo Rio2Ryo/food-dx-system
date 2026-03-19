@@ -1,5 +1,5 @@
 /**
- * Authentication Utilities for CITTA handcho
+ * Authentication Utilities for 食品流通システム
  * 
  * This module provides:
  * - Password hashing with bcrypt
@@ -95,7 +95,6 @@ export async function findUserByEmail(email: string) {
       password: true,
       avatarUrl: true,
       role: true,
-      companyId: true,
       createdAt: true,
     },
   });
@@ -116,7 +115,6 @@ export async function findUserById(id: string) {
       name: true,
       avatarUrl: true,
       role: true,
-      companyId: true,
       createdAt: true,
     },
   });
@@ -133,21 +131,19 @@ export async function createUser(data: {
   name?: string;
   avatarUrl?: string;
   role?: string;
-  companyId?: string;
 }) {
   const prisma = await getPrisma();
-  
+
   // Hash the password
   const hashedPassword = await hashPassword(data.password);
-  
+
   return prisma.user.create({
     data: {
       email: data.email.toLowerCase(),
       password: hashedPassword,
       name: data.name,
       avatarUrl: data.avatarUrl,
-      role: data.role || "STAFF",
-      companyId: data.companyId,
+      role: data.role || "USER",
     },
     select: {
       id: true,
@@ -155,7 +151,6 @@ export async function createUser(data: {
       name: true,
       avatarUrl: true,
       role: true,
-      companyId: true,
       createdAt: true,
     },
   });
@@ -176,9 +171,9 @@ export async function updateUser(
   }
 ) {
   const prisma = await getPrisma();
-  
+
   const updateData: Record<string, unknown> = {};
-  
+
   if (data.name !== undefined) {
     updateData.name = data.name;
   }
@@ -188,7 +183,7 @@ export async function updateUser(
   if (data.password !== undefined) {
     updateData.password = await hashPassword(data.password);
   }
-  
+
   return prisma.user.update({
     where: { id: userId },
     data: updateData,
@@ -198,7 +193,6 @@ export async function updateUser(
       name: true,
       avatarUrl: true,
       role: true,
-      companyId: true,
       createdAt: true,
     },
   });
@@ -233,7 +227,6 @@ export interface SessionData {
   email: string;
   name?: string;
   role: string;
-  companyId?: string;
   iat: number;
   exp: number;
 }
@@ -252,8 +245,7 @@ export function createSessionToken(
     userId,
     email: "", // Will be populated from DB
     name: "",
-    role: "STAFF",
-    companyId: undefined,
+    role: "USER",
     iat: Math.floor(Date.now() / 1000),
     exp: Math.floor(Date.now() / 1000) + duration,
   };
@@ -320,7 +312,7 @@ export function getD1Adapter(d1Database: D1Database): NextAuthD1Adapter {
     async createUser(data) {
       const prisma = getDb(d1Database);
       const hashedPassword = await hashPassword(data.password);
-      
+
       const user = await prisma.user.create({
         data: {
           id: data.id,
@@ -328,8 +320,7 @@ export function getD1Adapter(d1Database: D1Database): NextAuthD1Adapter {
           name: data.name,
           password: hashedPassword,
           avatarUrl: data.avatarUrl,
-          role: data.role || "STAFF",
-          companyId: data.companyId,
+          role: data.role || "USER",
           createdAt: data.createdAt,
         },
         select: {
@@ -338,11 +329,10 @@ export function getD1Adapter(d1Database: D1Database): NextAuthD1Adapter {
           name: true,
           avatarUrl: true,
           role: true,
-          companyId: true,
           createdAt: true,
         },
       });
-      
+
       return user;
     },
 
@@ -356,11 +346,10 @@ export function getD1Adapter(d1Database: D1Database): NextAuthD1Adapter {
           name: true,
           avatarUrl: true,
           role: true,
-          companyId: true,
           createdAt: true,
         },
       });
-      
+
       return user || null;
     },
 
@@ -375,11 +364,10 @@ export function getD1Adapter(d1Database: D1Database): NextAuthD1Adapter {
           password: true,
           avatarUrl: true,
           role: true,
-          companyId: true,
           createdAt: true,
         },
       });
-      
+
       return user || null;
     },
 
@@ -390,12 +378,12 @@ export function getD1Adapter(d1Database: D1Database): NextAuthD1Adapter {
 
     async updateUser(data) {
       const prisma = getDb(d1Database);
-      
+
       const updateData: Record<string, unknown> = {};
       if (data.name !== undefined) updateData.name = data.name;
       if (data.avatarUrl !== undefined) updateData.avatarUrl = data.avatarUrl;
       if (data.email !== undefined) updateData.email = data.email.toLowerCase();
-      
+
       const user = await prisma.user.update({
         where: { id: data.id },
         data: updateData,
@@ -405,11 +393,10 @@ export function getD1Adapter(d1Database: D1Database): NextAuthD1Adapter {
           name: true,
           avatarUrl: true,
           role: true,
-          companyId: true,
           createdAt: true,
         },
       });
-      
+
       return user;
     },
 
@@ -449,9 +436,9 @@ export function getD1Adapter(d1Database: D1Database): NextAuthD1Adapter {
           user: true,
         },
       });
-      
+
       if (!session) return null;
-      
+
       return {
         session: {
           id: session.id,
@@ -465,7 +452,6 @@ export function getD1Adapter(d1Database: D1Database): NextAuthD1Adapter {
           name: session.user.name,
           avatarUrl: session.user.avatarUrl,
           role: session.user.role,
-          companyId: session.user.companyId,
           createdAt: session.user.createdAt,
         },
       };

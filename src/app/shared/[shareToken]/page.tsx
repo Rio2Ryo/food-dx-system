@@ -67,15 +67,6 @@ export default async function SharedEntryPage({
     data: { viewCount: { increment: 1 } },
   });
 
-  // Record access
-  const ipAddress = undefined;
-  await prisma.sharedEntryUser.create({
-    data: {
-      sharedEntryId: sharedEntry.id,
-      ipAddress: ipAddress ?? undefined,
-    },
-  });
-
   // Build entry data
   const entryData = {
     id: sharedEntry.entry.id,
@@ -104,8 +95,8 @@ export default async function SharedEntryPage({
     <ShareEntryView
       entryId={sharedEntry.entryId}
       sharedById={sharedEntry.sharedById}
-      sharedByName={sharedEntry.sharedBy.name}
-      sharedByAvatarUrl={sharedEntry.sharedBy.avatarUrl}
+      sharedByName={sharedEntry.sharedBy.name ?? undefined}
+      sharedByAvatarUrl={sharedEntry.sharedBy.avatarUrl ?? undefined}
       viewCount={sharedEntry.viewCount + 1}
       expiresAt={sharedEntry.expiresAt?.toISOString() ?? null}
       entry={entryData}

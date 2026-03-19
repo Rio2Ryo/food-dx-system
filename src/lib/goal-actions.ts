@@ -12,7 +12,7 @@ export async function createGoal(
     userId: string;
     title: string;
     content?: string | null;
-    targetDate?: string | null;
+    target?: string | null;
   }
 ): Promise<Goal> {
   const prisma = await getPrisma();
@@ -21,7 +21,7 @@ export async function createGoal(
       userId: goalData.userId,
       title: goalData.title,
       content: goalData.content || undefined,
-      targetDate: goalData.targetDate ? new Date(goalData.targetDate) : null,
+      target: goalData.target ? new Date(goalData.target) : null,
     },
   });
   revalidatePath("/goals");
@@ -36,7 +36,7 @@ export async function updateGoal(
   updates: {
     title?: string;
     content?: string | null;
-    targetDate?: string | null;
+    target?: string | null;
     isCompleted?: boolean;
   }
 ): Promise<Goal> {
@@ -46,8 +46,8 @@ export async function updateGoal(
     data: {
       ...(updates.title !== undefined && { title: updates.title }),
       ...(updates.content !== undefined && { content: updates.content || undefined }),
-      ...(updates.targetDate !== undefined && {
-        targetDate: updates.targetDate ? new Date(updates.targetDate) : null,
+      ...(updates.target !== undefined && {
+        target: updates.target ? new Date(updates.target) : null,
       }),
       ...(updates.isCompleted !== undefined && { isCompleted: updates.isCompleted }),
     },
@@ -83,7 +83,7 @@ export async function toggleGoalCompletion(goalId: string): Promise<Goal> {
   const updatedGoal = await prisma.goal.update({
     where: { id: goalId },
     data: {
-      isCompleted: !goal.isCompleted,
+      completed: !goal.completed,
     },
   });
   revalidatePath("/goals");
@@ -105,8 +105,8 @@ export async function getGoals(userId: string, filter?: "all" | "active" | "comp
   const goals = await prisma.goal.findMany({
     where,
     orderBy: [
-      { isCompleted: "asc" },
-      { targetDate: "asc" },
+      { completed: "asc" },
+      { target: "asc" },
       { createdAt: "desc" },
     ],
   });
@@ -125,11 +125,11 @@ export async function getGoalsByStatus(userId: string): Promise<{
 
   const [active, completed] = await Promise.all([
     prisma.goal.findMany({
-      where: { userId, isCompleted: false },
-      orderBy: [{ targetDate: "asc" }, { createdAt: "desc" }],
+      where: { userId, completed: false },
+      orderBy: [{ target: "asc" }, { createdAt: "desc" }],
     }),
     prisma.goal.findMany({
-      where: { userId, isCompleted: true },
+      where: { userId, completed: true },
       orderBy: [{ createdAt: "desc" }],
     }),
   ]);
@@ -148,7 +148,7 @@ export async function getTodayWakuWaku(userId: string): Promise<string | null> {
   const wakuWaku = await prisma.goal.findFirst({
     where: {
       userId,
-      isCompleted: true,
+      completed: true,
       createdAt: {
         gte: today,
       },
@@ -171,7 +171,7 @@ export async function getWeeklyWakuWaku(userId: string): Promise<Goal[]> {
   const wakuWaku = await prisma.goal.findMany({
     where: {
       userId,
-      isCompleted: true,
+      completed: true,
       createdAt: {
         gte: weekAgo,
       },

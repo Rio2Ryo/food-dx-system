@@ -1,8 +1,8 @@
-# CITTA handcho - 24h Vertical Weekly View
+# 食品流通システム - 24h Vertical Weekly View
 
 ## Overview
 
-This component provides a 24h vertical weekly calendar view for the CITTA handcho app. It displays 7 days (Monday-Sunday) side by side with 24 time slots per day, supporting text entries and handwriting input.
+This component provides a 24h vertical weekly calendar view for the 食品流通システム app. It displays 7 days (Monday-Sunday) side by side with 24 time slots per day, supporting text entries and handwriting input.
 
 ## Component Structure
 

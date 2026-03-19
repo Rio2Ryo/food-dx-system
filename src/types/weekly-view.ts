@@ -60,6 +60,19 @@ export interface EntryImage {
 }
 
 /**
+ * Entry data for creating/updating (without id and timestamps)
+ */
+export interface EntryInput {
+  userId: string;
+  year: number;
+  week: number;
+  dayOfWeek: number;
+  hour: number;
+  content?: string | null;
+  isCompleted: boolean;
+}
+
+/**
  * Time slot data structure for UI rendering
  */
 export interface TimeSlot {

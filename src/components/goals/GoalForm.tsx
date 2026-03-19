@@ -14,14 +14,14 @@ export function GoalForm({
   initialData?: {
     title: string;
     content?: string;
-    targetDate?: string;
+    target?: string;
   };
   onCancel?: () => void;
   onSuccess?: (goal: { id: string }) => void;
 }) {
   const [title, setTitle] = useState(initialData?.title || "");
   const [content, setContent] = useState(initialData?.content || "");
-  const [targetDate, setTargetDate] = useState(initialData?.targetDate || "");
+  const [target, setTarget] = useState(initialData?.target || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,7 +42,7 @@ export function GoalForm({
         await updateGoal(initialData.title, {
           title: title.trim(),
           content: content.trim() || null,
-          targetDate: targetDate || null,
+          target: target || null,
         });
       } else {
         // Create new goal
@@ -50,7 +50,7 @@ export function GoalForm({
           userId: "current-user-id", // In real app, get from auth context
           title: title.trim(),
           content: content.trim() || null,
-          targetDate: targetDate || null,
+          target: target || null,
         });
         onSuccess?.({ id: result.id });
       }
@@ -97,14 +97,14 @@ export function GoalForm({
 
       {/* Target Date Input (Optional) */}
       <div>
-        <label htmlFor="targetDate" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="target" className="block text-sm font-medium text-slate-700">
           Target Date (Optional)
         </label>
         <input
           type="date"
-          id="targetDate"
-          value={targetDate}
-          onChange={(e) => setTargetDate(e.target.value)}
+          id="target"
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
           className="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-slate-900 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
         />
         <p className="mt-1 text-xs text-slate-500">

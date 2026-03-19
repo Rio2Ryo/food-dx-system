@@ -14,9 +14,10 @@ import type { NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  
-  // Skip middleware for auth pages and static assets
+
+  // Keep public pages accessible
   if (
+    pathname === "/" ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/api/auth/") ||
@@ -24,18 +25,35 @@ export async function middleware(req: NextRequest) {
   ) {
     return NextResponse.next();
   }
-  
-  // Get session token from cookies
+
+  // Protect only app routes
+  const protectedPrefixes = [
+    "/ocr",
+    "/orders",
+    "/inventory",
+    "/accounting",
+    "/returns",
+    "/products",
+    "/weekly-view",
+    "/shared",
+  ];
+
+  const isProtected = protectedPrefixes.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+
+  if (!isProtected) {
+    return NextResponse.next();
+  }
+
   const sessionToken = req.cookies.get("next-auth.session-token")?.value;
-  
-  // If no session, redirect to login
+
   if (!sessionToken) {
     const url = new URL("/auth/login", req.url);
     url.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(url);
   }
-  
-  // Session exists, allow request to proceed
+
   return NextResponse.next();
 }
 
@@ -44,9 +62,16 @@ export async function middleware(req: NextRequest) {
 // ============================================================================
 
 export const config = {
-  // Match all protected routes
-  // All routes under / (root) except /auth/* are protected
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/",
+    "/ocr/:path*",
+    "/orders/:path*",
+    "/inventory/:path*",
+    "/accounting/:path*",
+    "/returns/:path*",
+    "/products/:path*",
+    "/weekly-view/:path*",
+    "/shared/:path*",
+    "/auth/:path*",
   ],
 };
