@@ -1,6 +1,7 @@
 import Link from "next/link";
 import WorkflowStepBar from "@/components/WorkflowStepBar";
 import NavLinks from "@/components/NavLinks";
+import { handleSignOut } from "@/lib/actions";
 
 const navItems = [
   { href: "/ocr", label: "受注(OCR)" },
@@ -50,7 +51,7 @@ export default function DashboardLayout({
                 C
               </span>
               <span className="hidden text-lg font-bold tracking-tight text-slate-900 sm:inline">
-                FoodFlow DX
+                食品流通システム
               </span>
             </Link>
 
@@ -86,14 +87,22 @@ export default function DashboardLayout({
             {/* Divider */}
             <div className="hidden h-6 w-px bg-slate-200 sm:block" />
 
-            {/* User avatar + name */}
+            {/* User avatar + name + logout */}
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
                 山美
               </div>
-              <span className="hidden text-sm font-medium text-slate-700 sm:inline">
-                山田美咲
-              </span>
+              <div className="flex flex-col">
+                <span className="text-sm font-medium text-slate-700">
+                  山田美咲
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="text-xs text-slate-400 hover:text-red-600"
+                >
+                  ログアウト
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -138,7 +147,7 @@ export default function DashboardLayout({
           {/* Mini footer in sidebar */}
           <div className="mt-8 rounded-lg bg-indigo-50 px-4 py-3">
             <p className="text-xs font-medium text-indigo-700">
-              FoodFlow DX v0.1
+              食品流通システム v0.1
             </p>
             <p className="mt-0.5 text-[11px] text-indigo-500">
               食品業界向け受発注DX

@@ -1,0 +1,334 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createUser, isValidEmail, validatePasswordStrength } from "@/lib/auth";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+    
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+    } else if (!isValidEmail(formData.email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+    
+    const passwordValidation = validatePasswordStrength(formData.password);
+    if (!passwordValidation.valid) {
+      newErrors.password = passwordValidation.error || "Password is required";
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      const user = await createUser({
+        email: formData.email.toLowerCase(),
+        password: formData.password,
+        name: formData.name,
+      });
+      
+      // Auto-login after registration
+      setSuccess(true);
+      
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        router.push("/auth/login?registered=true");
+      }, 2000);
+    } catch (err: any) {
+      if (err.message?.includes("Unique constraint failed")) {
+        setErrors({ email: "This email is already registered" });
+      } else {
+        setErrors({ form: "Failed to create account. Please try again." });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 px-4 py-12">
+        <div className="w-full max-w-md text-center">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-500 text-4xl font-bold text-white shadow-xl">
+            ✓
+          </div>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-slate-900">
+            Account Created!
+          </h2>
+          <p className="mt-2 text-lg text-slate-600">
+            Redirecting to login...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-blue-100 px-4 py-12">
+      <div className="w-full max-w-md space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-xl bg-indigo-600 text-2xl font-bold text-white shadow-lg">
+            C
+          </div>
+          <h2 className="mt-6 text-3xl font-bold tracking-tight text-slate-900">
+            Create an account
+          </h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Join us to start managing your food distribution business
+          </p>
+        </div>
+
+        {/* Form */}
+        <div className="mt-8 bg-white p-8 shadow-xl rounded-2xl border border-slate-100">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            {errors.form && (
+              <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
+                {errors.form}
+              </div>
+            )}
+
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Full name
+              </label>
+              <div className="mt-1">
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  autoComplete="name"
+                  required
+                  value={formData.name}
+                  onChange={handleChange}
+                  className={`block w-full rounded-lg border px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all ${
+                    errors.name ? "border-red-300 focus:border-red-500" : "border-slate-300"
+                  }`}
+                  placeholder="John Doe"
+                />
+                {errors.name && (
+                  <p className="mt-1 text-xs text-red-600">{errors.name}</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Email address
+              </label>
+              <div className="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`block w-full rounded-lg border px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all ${
+                    errors.email ? "border-red-300 focus:border-red-500" : "border-slate-300"
+                  }`}
+                  placeholder="you@example.com"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Password
+              </label>
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`block w-full rounded-lg border px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all ${
+                    errors.password ? "border-red-300 focus:border-red-500" : "border-slate-300"
+                  }`}
+                  placeholder="••••••••"
+                />
+                {errors.password && (
+                  <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+                )}
+                <p className="mt-1 text-xs text-slate-500">
+                  Must be at least 8 characters with uppercase, lowercase, and numbers
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Confirm password
+              </label>
+              <div className="mt-1">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className={`block w-full rounded-lg border px-4 py-3 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all ${
+                    errors.confirmPassword ? "border-red-300 focus:border-red-500" : "border-slate-300"
+                  }`}
+                  placeholder="••••••••"
+                />
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.confirmPassword}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="group relative flex w-full justify-center rounded-lg bg-indigo-600 py-3 px-4 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {isLoading ? (
+                <span className="flex items-center">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Creating account...
+                </span>
+              ) : (
+                "Create account"
+              )}
+            </button>
+          </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-2 text-slate-500">
+                  Or sign up with
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 transition-all"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                  <g transform="translate(12 12)">
+                    <path fill="#4285F4" d="M-12 0c0-4.84 1.85-8.98 4.92-12.12l-5.3-5.3C-13.33 2.26-18 7.65-18 14s4.67 11.74 11.38 12.92l4.92-5.02C-5.94 20.94-8.3 18.06-10.2 14.5h-1.8v-3h3.6v-3.6h-3.6V8.4h5.4v-3.6h-5.4V0h5.4c2.4 0 4.62.9 6.36 2.64L-5.88 6.96C-7.8 4.8 10.2 0 12 0" />
+                  </g>
+                </svg>
+                <span className="text-sm font-medium">Google</span>
+              </button>
+              <button
+                type="button"
+                className="flex w-full items-center justify-center gap-3 rounded-lg border border-slate-300 bg-white py-2 px-4 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1 transition-all"
+              >
+                <svg className="h-5 w-5 text-slate-900" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm font-medium">GitHub</span>
+              </button>
+            </div>
+          </div>
+
+          <p className="mt-8 text-center text-sm text-slate-600">
+            Already have an account?{" "}
+            <Link
+              href="/auth/login"
+              className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
