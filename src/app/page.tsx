@@ -136,7 +136,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="px-4 pb-16 pt-28 text-center sm:px-6 lg:px-8">
         <h1 className="text-5xl font-bold tracking-tight text-slate-900 sm:text-6xl">
-          Citta Handcho
+          FoodFlow DX
         </h1>
         <p className="mx-auto mt-4 text-xl font-medium text-indigo-600 sm:text-2xl">
           食品業界向け 受発注DXシステム

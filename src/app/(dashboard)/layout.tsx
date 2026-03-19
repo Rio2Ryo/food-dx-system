@@ -50,7 +50,7 @@ export default function DashboardLayout({
                 C
               </span>
               <span className="hidden text-lg font-bold tracking-tight text-slate-900 sm:inline">
-                Citta Handcho
+                FoodFlow DX
               </span>
             </Link>
 
@@ -138,7 +138,7 @@ export default function DashboardLayout({
           {/* Mini footer in sidebar */}
           <div className="mt-8 rounded-lg bg-indigo-50 px-4 py-3">
             <p className="text-xs font-medium text-indigo-700">
-              Citta Handcho v0.1
+              FoodFlow DX v0.1
             </p>
             <p className="mt-0.5 text-[11px] text-indigo-500">
               食品業界向け受発注DX
