@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { isValidEmail } from "@/lib/auth";
+import { isValidEmail } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();

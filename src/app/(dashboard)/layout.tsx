@@ -1,7 +1,6 @@
 import Link from "next/link";
 import WorkflowStepBar from "@/components/WorkflowStepBar";
 import NavLinks from "@/components/NavLinks";
-import { handleSignOut } from "@/lib/actions";
 
 const navItems = [
   { href: "/ocr", label: "受注(OCR)" },
@@ -96,12 +95,12 @@ export default function DashboardLayout({
                 <span className="text-sm font-medium text-slate-700">
                   山田美咲
                 </span>
-                <button
-                  onClick={handleSignOut}
-                  className="text-xs text-slate-400 hover:text-red-600"
+                <Link
+                  href="/auth/login"
+                  className="text-xs text-slate-400 hover:text-indigo-600"
                 >
-                  ログアウト
-                </button>
+                  ログイン画面へ
+                </Link>
               </div>
             </div>
           </div>

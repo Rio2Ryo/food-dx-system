@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createUser, isValidEmail, validatePasswordStrength } from "@/lib/auth";
+import { isValidEmail, validatePasswordStrength } from "@/lib/auth-client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -67,13 +67,24 @@ export default function RegisterPage() {
     setIsLoading(true);
     
     try {
-      const user = await createUser({
-        email: formData.email.toLowerCase(),
-        password: formData.password,
-        name: formData.name,
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email.toLowerCase(),
+          password: formData.password,
+          name: formData.name,
+        }),
       });
-      
-      // Auto-login after registration
+
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Failed to create account");
+      }
+
       setSuccess(true);
       
       // Redirect to login page after a short delay
@@ -81,10 +92,10 @@ export default function RegisterPage() {
         router.push("/auth/login?registered=true");
       }, 2000);
     } catch (err: any) {
-      if (err.message?.includes("Unique constraint failed")) {
+      if (err.message?.includes("already registered")) {
         setErrors({ email: "This email is already registered" });
       } else {
-        setErrors({ form: "Failed to create account. Please try again." });
+        setErrors({ form: err.message || "Failed to create account. Please try again." });
       }
     } finally {
       setIsLoading(false);
