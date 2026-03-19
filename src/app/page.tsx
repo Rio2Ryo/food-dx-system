@@ -251,11 +251,16 @@ export default function Home() {
 
       {/* CTA */}
       <section className="pb-28 text-center">
+        <div className="mb-5">
+          <span className="inline-flex items-center rounded-full bg-emerald-50 px-4 py-1.5 text-sm font-medium text-emerald-700 ring-1 ring-emerald-200">
+            デモモード公開中：サインインなしで画面確認できます
+          </span>
+        </div>
         <Link
           href="/ocr"
           className="inline-flex items-center rounded-lg bg-indigo-600 px-8 py-4 text-lg font-semibold text-white shadow-md transition-all duration-200 hover:bg-indigo-700 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-indigo-300"
         >
-          業務を始める
+          デモを開く
           <svg
             className="ml-2 h-5 w-5"
             fill="none"

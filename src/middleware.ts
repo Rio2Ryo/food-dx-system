@@ -15,43 +15,13 @@ import type { NextRequest } from "next/server";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Keep public pages accessible
+  // Temporary demo mode: keep all user-facing pages public
   if (
-    pathname === "/" ||
-    pathname.startsWith("/auth/") ||
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/api/auth/") ||
     pathname.match(/\.(svg|png|jpg|jpeg|gif|webp|ico)$/)
   ) {
     return NextResponse.next();
-  }
-
-  // Protect only app routes
-  const protectedPrefixes = [
-    "/ocr",
-    "/orders",
-    "/inventory",
-    "/accounting",
-    "/returns",
-    "/products",
-    "/weekly-view",
-    "/shared",
-  ];
-
-  const isProtected = protectedPrefixes.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
-
-  if (!isProtected) {
-    return NextResponse.next();
-  }
-
-  const sessionToken = req.cookies.get("next-auth.session-token")?.value;
-
-  if (!sessionToken) {
-    const url = new URL("/auth/login", req.url);
-    url.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(url);
   }
 
   return NextResponse.next();
